@@ -1,0 +1,57 @@
+<?php
+session_start();
+require 'db_connect.php';
+
+// Hakikisha mteja ameingia
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $owner_id = $_SESSION['user_id'];
+    $title = $_POST['title'];
+    $property_type = $_POST['property_type'];
+    $purpose = $_POST['purpose'];
+    $price = $_POST['price'];
+    $location = $_POST['location'];
+    $description = $_POST['description'];
+
+    // --- USIMAMIZI WA PICHA ---
+    $target_dir = "uploads/";
+    
+    // Tengeneza folder kama halipo
+    if (!file_exists($target_dir)) {
+        mkdir($target_dir, 0777, true);
+    }
+
+    $file_name = time() . "_" . basename($_FILES["image_path"]["name"]);
+    $target_file = $target_dir . $file_name;
+    $uploadOk = 1;
+    $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+
+    // Angalia kama ni picha kweli
+    $check = getimagesize($_FILES["image_path"]["tmp_name"]);
+    if($check !== false) {
+        if (move_uploaded_file($_FILES["image_path"]["tmp_name"], $target_file)) {
+            $image_path = $target_file;
+        } else {
+            die("Samahani, picha imeshindwa kupakiwa.");
+        }
+    } else {
+        die("Faili lililopakiwa si picha.");
+    }
+
+    // --- KUHIFADHI KWENYE DATABASE ---
+    try {
+        $sql = "INSERT INTO properties (title, property_type, purpose, price, location, description, image_path, owner_id) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute([$title, $property_type, $purpose, $price, $location, $description, $image_path, $owner_id]);
+
+        // Ikifanikiwa, mrudishe kwenye 'Mali Zangu' akaone alichoweka
+        header("Location: my_listings.php?success=1");
+    } catch (PDOException $e) {
+        die("Hitilafu imetokea: " . $e->getMessage());
+    }
+}
