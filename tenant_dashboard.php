@@ -113,6 +113,11 @@ $my_listings = $listings->fetchAll();
             <a href="maintenance.php" class="nav-link"><i class="fas fa-screwdriver-wrench"></i> Matengenezo</a>
             <a href="billing.php" class="nav-link"><i class="fas fa-wallet"></i> Bili & Malipo</a>
             
+    <a href="user_add_property.php" class="btn btn-primary rounded-pill px-4 fw-bold">
+        <i class="fas fa-plus-circle me-1"></i> Weka Mali Sokoni
+    </a>
+
+            
             <a href="logout.php" class="nav-link" style="margin-top: 20px; color: #f87171;"><i class="fas fa-power-off"></i> Toka Nje</a>
         </nav>
 

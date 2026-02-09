@@ -2,11 +2,11 @@
 session_start();
 require 'db_connect.php';
 
-// Kuchukua jumla ya mapato (Mfano wa kodi)
+
 $total_revenue = $pdo->query("SELECT SUM(price) FROM properties WHERE status = 'Sold' OR status = 'Active'")->fetchColumn();
 $pending_payments = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'")->fetchColumn();
 
-// Vuta list ya miamala ya karibuni
+
 $transactions = $pdo->query("SELECT b.*, u.full_name, p.price, p.title 
                             FROM bookings b 
                             JOIN users u ON b.client_id = u.user_id 

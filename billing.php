@@ -9,7 +9,7 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'tenant') {
 
 $user_id = $_SESSION['user_id'];
 
-// Vuta bili zote za mteja huyu
+
 try {
     $stmt = $pdo->prepare("SELECT * FROM utilities WHERE client_id = ? ORDER BY status DESC, id DESC");
     $stmt->execute([$user_id]);

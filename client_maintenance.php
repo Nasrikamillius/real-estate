@@ -2,20 +2,20 @@
 session_start();
 require 'db_connect.php';
 
-// Hakikisha mteja amelogin
+
 if(!isset($_SESSION['user_id'])) { header("Location: login.php"); exit(); }
 
 $user_id = $_SESSION['user_id'];
 $msg = "";
 
-// 1. Tuma Malalamiko
+
 if($_SERVER['REQUEST_METHOD'] == 'POST'){
     $stmt = $pdo->prepare("INSERT INTO maintenance_requests (user_id, property_id, issue_description, status) VALUES (?, ?, ?, 'Pending')");
     $stmt->execute([$user_id, $_POST['property_id'], $_POST['issue']]);
     $msg = "Ripoti imetumwa kikamilifu!";
 }
 
-// 2. Vuta nyumba alizopanga mteja pekee
+
 $props = $pdo->prepare("SELECT p.property_id, p.title FROM bookings b JOIN properties p ON b.property_id = p.property_id WHERE b.client_id = ? AND b.status = 'Confirmed'");
 $props->execute([$user_id]);
 $my_properties = $props->fetchAll();

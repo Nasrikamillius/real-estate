@@ -1,24 +1,39 @@
-<?php
+<?php 
+include 'db_connect.php'; 
 session_start();
-require 'db_connect.php';
 
-$success_msg = "";
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+// LOGIC YA KUPOKEA DATA
+if(isset($_POST['submit_property'])) {
     $title = $_POST['title'];
-    $price = $_POST['price'];
     $location = $_POST['location'];
-    $category = $_POST['category'];
-    $desc = $_POST['description'];
+    $price = $_POST['price'];
+    $type = $_POST['type'];
+    $description = $_POST['description'];
     
-    // Upload Picha
-    $image = $_FILES['image']['name'];
-    $temp_name = $_FILES['image']['tmp_name'];
-    $folder = "uploads/" . $image;
+    // 1. Shughulikia Picha Kuu (Main Cover)
+    $main_image = $_FILES['main_image']['name'];
+    $target_main = "uploads/" . basename($main_image);
     
-    $stmt = $pdo->prepare("INSERT INTO properties (title, price, location, category, description, image_name, status) VALUES (?, ?, ?, ?, ?, ?, 'Active')");
-    if ($stmt->execute([$title, $price, $location, $category, $desc, $image])) {
-        move_uploaded_file($temp_name, $folder);
-        $success_msg = "Mali imepandishwa sokoni kwa kishindo!";
+    $sql = "INSERT INTO properties (title, location, price, property_type, description, image_name, status) VALUES (?, ?, ?, ?, ?, ?, 'Available')";
+    $stmt = $pdo->prepare($sql);
+    
+    if($stmt->execute([$title, $location, $price, $type, $description, $main_image])) {
+        $last_id = $pdo->lastInsertId(); // ID ya mali tuliyotoka kusave sasa hivi
+        move_uploaded_file($_FILES['main_image']['tmp_name'], $target_main);
+
+        // 2. Shughulikia Picha za Gallery (Multiple Upload)
+        if(!empty(array_filter($_FILES['gallery']['name']))) {
+            foreach($_FILES['gallery']['name'] as $key => $val) {
+                $extra_img_name = $_FILES['gallery']['name'][$key];
+                $target_extra = "uploads/" . basename($extra_img_name);
+                
+                if(move_uploaded_file($_FILES['gallery']['tmp_name'][$key], $target_extra)) {
+                    $sql_extra = "INSERT INTO property_images (property_id, image_path) VALUES (?, ?)";
+                    $pdo->prepare($sql_extra)->execute([$last_id, $extra_img_name]);
+                }
+            }
+        }
+        echo "<script>alert('Mali na Album ya picha zimeongezwa kikamilifu!'); window.location='admin_manage_properties.php';</script>";
     }
 }
 ?>
@@ -26,210 +41,116 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <title>Ongeza Mali | Elite Premium</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <title>Weka Mali | Smart Admin Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --sidebar-bg: #0f172a;
-            --accent-blue: #38bdf8;
-            --main-bg: #f8fafc;
+        :root { --accent: #38bdf8; --sidebar-bg: #0f172a; }
+        body { 
+            background: url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover; font-family: 'Inter', sans-serif;
         }
-
-        body {
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--main-bg);
-            display: flex;
-        }
-
-        /* --- SIDEBAR YA KUDUMU (Zile 9) --- */
-        .sidebar {
-            width: 280px;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            height: 100vh;
-            position: fixed;
-            padding: 30px 20px;
-            box-sizing: border-box;
-            color: white;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-        }
-
-        .sidebar h2 { font-size: 1.8rem; font-weight: 800; color: var(--accent-blue); margin-bottom: 40px; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(241, 245, 249, 0.92); z-index: -1; }
+        .sidebar { width: 280px; height: 100vh; background: var(--sidebar-bg); position: fixed; color: white; padding: 30px 15px; }
+        .nav-link { color: #94a3b8; padding: 12px 20px; border-radius: 12px; margin-bottom: 8px; display: flex; align-items: center; text-decoration: none; transition: 0.3s; }
+        .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); border-right: 4px solid var(--accent); }
+        .main-content { margin-left: 280px; padding: 40px; }
         
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            color: #94a3b8;
-            text-decoration: none;
-            border-radius: 16px;
-            font-weight: 600;
-            margin-bottom: 5px;
-            transition: 0.4s;
+        /* Glass Form Style */
+        .glass-card { 
+            background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(15px); 
+            border-radius: 30px; padding: 40px; border: 1px solid rgba(255,255,255,0.4);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.05);
         }
-
-        .nav-link:hover, .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--accent-blue);
-            transform: translateX(8px);
-        }
-
-        .nav-link.active { background: var(--accent-blue); color: var(--sidebar-bg); }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: 280px;
-            padding: 50px;
-            width: calc(100% - 280px);
-        }
-
-        .glass-form {
-            background: white;
-            padding: 45px;
-            border-radius: 40px;
-            box-shadow: 0 30px 60px rgba(0,0,0,0.05);
-            max-width: 900px;
-            margin: 0 auto;
-            border: 1px solid rgba(255,255,255,0.8);
-        }
-
-        .form-header { text-align: center; margin-bottom: 40px; }
-        .form-header h1 { font-weight: 800; font-size: 2rem; color: var(--sidebar-bg); margin: 0; }
-        .form-header p { color: #64748b; font-weight: 500; }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 25px;
-        }
-
-        .input-box { display: flex; flex-direction: column; gap: 8px; }
-        .input-box.full { grid-column: span 2; }
-
-        label { font-weight: 700; color: #334155; font-size: 0.9rem; }
-        
-        input, select, textarea {
-            padding: 16px;
-            border: 2px solid #f1f5f9;
-            border-radius: 18px;
-            font-family: inherit;
-            font-size: 1rem;
+        .form-label { font-weight: 700; color: var(--sidebar-bg); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+        .form-control, .form-select { 
+            border-radius: 15px; padding: 12px 18px; border: 1px solid #e2e8f0; background: white;
             transition: 0.3s;
-            background: #f8fafc;
         }
-
-        input:focus, select:focus, textarea:focus {
-            border-color: var(--accent-blue);
-            background: white;
-            outline: none;
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1);
+        .form-control:focus { box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.1); border-color: var(--accent); }
+        .btn-upload { 
+            background: var(--sidebar-bg); color: white; border-radius: 15px; 
+            padding: 15px; font-weight: 800; width: 100%; border: none; 
+            transition: 0.4s; margin-top: 20px;
         }
-
-        .btn-upload {
-            grid-column: span 2;
-            background: var(--sidebar-bg);
-            color: white;
-            padding: 20px;
-            border: none;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: 0.4s;
-            margin-top: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-        }
-
-        .btn-upload:hover {
-            background: var(--accent-blue);
-            color: var(--sidebar-bg);
-            transform: scale(1.02);
-            box-shadow: 0 20px 40px rgba(56, 189, 248, 0.2);
-        }
-
-        .success-toast {
-            background: #dcfce7;
-            color: #15803d;
-            padding: 20px;
-            border-radius: 20px;
-            text-align: center;
-            font-weight: 800;
-            margin-bottom: 30px;
-            animation: slideIn 0.5s ease;
-        }
-
-        @keyframes slideIn { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .btn-upload:hover { background: var(--accent); transform: translateY(-3px); color: var(--sidebar-bg); }
+        .type-icon { font-size: 1.2rem; margin-right: 10px; color: var(--accent); }
     </style>
 </head>
 <body>
+<div class="overlay"></div>
 
-    <div class="sidebar">
-        <h2><i class="fas fa-gem"></i> ELITE</h2>
-        <a href="dashboard.php" class="nav-link"><i class="fas fa-chart-pie"></i> Dashboard</a>
-        <a href="admin_add_property.php" class="nav-link active"><i class="fas fa-plus-square"></i> Ongeza Mali</a>
-        <a href="admin_manage_properties.php" class="nav-link"><i class="fas fa-building"></i> Dhibiti Mali</a>
-        <a href="admin_approve_bookings.php" class="nav-link"><i class="fas fa-check-double"></i> Bookings</a>
-        <a href="tenants_list.php" class="nav-link"><i class="fas fa-users-gear"></i> Wapangaji</a>
-        <a href="manage_maintenance.php" class="nav-link"><i class="fas fa-screwdriver-wrench"></i> Matengenezo</a>
-        <a href="reports.php" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Mapato</a>
-        <a href="settings.php" class="nav-link"><i class="fas fa-sliders"></i> Mipangilio</a>
-        <div style="height: 100px;"></div>
-        <a href="logout.php" class="nav-link" style="color: #fb7185;"><i class="fas fa-power-off"></i> Logout</a>
+<div class="sidebar">
+    <div class="h4 fw-bold text-center mb-5" style="color: var(--accent);">SMART ADMIN</div>
+    <nav class="nav flex-column">
+        <a class="nav-link" href="dashboard.php"><i class="fas fa-th-large me-2"></i> Dashboard</a>
+        <a class="nav-link active" href="admin_add_property.php"><i class="fas fa-plus-circle me-2"></i> Ongeza Mali</a>
+        <a class="nav-link" href="admin_manage_properties.php"><i class="fas fa-home me-2"></i> Simamia Mali</a>
+        <a class="nav-link" href="admin_approve_bookings.php"><i class="fas fa-check-circle me-2"></i> Maombi</a>
+        <a class="nav-link" href="admin_messages.php"><i class="fas fa-envelope me-2"></i> Ujumbe</a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <div class="mb-5">
+        <h2 class="fw-bold text-dark">Ongeza Mali Sokoni 🚀</h2>
+        <p class="text-muted">Kama Airbnb, weka picha nyingi ili mteja ajionee kila kona ya nyumba.</p>
     </div>
 
-    <div class="main-content">
-        <?php if($success_msg) echo "<div class='success-toast'>$success_msg</div>"; ?>
-
-        <div class="glass-form">
-            <div class="form-header">
-                <h1>Sajili Mali Mpya</h1>
-                <p>Jaza taarifa hapa chini ili kupandisha mali yako kwenye soko la Kimataifa.</p>
-            </div>
-
-            <form action="" method="POST" enctype="multipart/form-data">
-                <div class="form-grid">
-                    <div class="input-box">
-                        <label>Jina la Mali</label>
-                        <input type="text" name="title" placeholder="Mfano: Royal Palm Villa" required>
-                    </div>
-                    <div class="input-box">
-                        <label>Kundi (Category)</label>
-                        <select name="category" required>
-                            <option value="Apartment">Apartment</option>
-                            <option value="House">Nyumba Kamili</option>
-                            <option value="Office">Ofisi</option>
-                            <option value="Land">Kiwanja</option>
-                        </select>
-                    </div>
-                    <div class="input-box">
-                        <label>Bei ya Kukodisha/Kuuza (TZS)</label>
-                        <input type="number" name="price" placeholder="Mfano: 1,500,000" required>
-                    </div>
-                    <div class="input-box">
-                        <label>Eneo (Location)</label>
-                        <input type="text" name="location" placeholder="Mfano: Oysterbay, Dar es Salaam" required>
-                    </div>
-                    <div class="input-box full">
-                        <label>Picha Kuu ya Mali</label>
-                        <input type="file" name="image" accept="image/*" required>
-                    </div>
-                    <div class="input-box full">
-                        <label>Maelezo Mafupi (Description)</label>
-                        <textarea name="description" placeholder="Elezea sifa za mali hii kwa undani..."></textarea>
-                    </div>
+    <div class="glass-card">
+        <form action="" method="POST" enctype="multipart/form-data">
+            <div class="row g-4">
+                <div class="col-md-12">
+                    <label class="form-label">Jina la Mali / Kichwa cha Habari</label>
+                    <input type="text" name="title" class="form-control" placeholder="Mf: Modern Apartment yenye View ya Bahari" required>
                 </div>
-                
-                <button type="submit" class="btn-upload">
-                    <i class="fas fa-cloud-upload-alt"></i> PANDISHA MALI SASA
-                </button>
-            </form>
-        </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Mahali (Location)</label>
+                    <input type="text" name="location" class="form-control" placeholder="Mf: Masaki, Dar es Salaam" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Bei (TZS kwa Mwezi/Jumla)</label>
+                    <input type="number" name="price" class="form-control" placeholder="Mf: 1,500,000" required>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Aina ya Mali</label>
+                    <select name="type" class="form-select" required>
+                        <option value="Nyumba Nzima">🏠 Nyumba Nzima</option>
+                        <option value="Apartment">🏢 Apartment ya Kisasa</option>
+                        <option value="Chumba">🛌 Chumba Kimoja (Master)</option>
+                        <option value="Ofisi">💼 Eneo la Ofisi</option>
+                        <option value="Hotel/Villa">🏝️ Hotel au Villa</option>
+                        <option value="Kiwanja">📐 Kiwanja / Shamba</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label text-primary"><i class="fas fa-image me-1"></i> Picha ya Jalada (Main Cover)</label>
+                    <input type="file" name="main_image" class="form-control" required>
+                    <small class="text-muted">Hii ndio itatokea kwanza kwenye search.</small>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label text-info"><i class="fas fa-images me-1"></i> Album ya Ndani (Gallery)</label>
+                    <input type="file" name="gallery[]" class="form-control" multiple>
+                    <small class="text-muted">Shikilia <b>Ctrl</b> kuchagua picha nyingi za vyumba.</small>
+                </div>
+
+                <div class="col-md-12">
+                    <label class="form-label">Maelezo ya Ziada & Sifa</label>
+                    <textarea name="description" class="form-control" rows="5" placeholder="Elezea kuhusu umeme, maji, ulinzi, na sifa za vyumba..." required></textarea>
+                </div>
+
+                <div class="col-md-12">
+                    <button type="submit" name="submit_property" class="btn-upload shadow-lg">
+                        PANDISHA MALI SOKONI SASA <i class="fas fa-rocket ms-2"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
     </div>
+</div>
 
 </body>
 </html>

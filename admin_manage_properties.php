@@ -97,6 +97,11 @@ $properties = $pdo->query("SELECT * FROM properties ORDER BY property_id DESC")-
         <a href="manage_maintenance.php" class="nav-link"><i class="fas fa-screwdriver-wrench"></i> Matengenezo</a>
         <a href="reports.php" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Mapato</a>
         <a href="settings.php" class="nav-link"><i class="fas fa-sliders"></i> Mipangilio</a>
+        <li class="nav-item">
+    <a href="logout.php" class="nav-link text-danger" onclick="return confirm('Je, una uhakika unataka kutoka?')">
+        <i class="fas fa-sign-out-alt"></i> Ondoka (Logout)
+    </a>
+</li>
         <div style="height: 100px;"></div>
         <a href="logout.php" class="nav-link" style="color: #fb7185;"><i class="fas fa-power-off"></i> Logout</a>
     </div>

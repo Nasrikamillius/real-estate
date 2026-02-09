@@ -1,256 +1,150 @@
-<?php
+<?php 
+include 'db_connect.php'; 
 session_start();
-require 'db_connect.php';
 
-// Takwimu za haraka
-$total_mali = $pdo->query("SELECT COUNT(*) FROM properties WHERE status = 'Active'")->fetchColumn();
-$pending_maint = $pdo->query("SELECT COUNT(*) FROM maintenance_requests WHERE status = 'Pending'")->fetchColumn();
-$revenue = $pdo->query("SELECT SUM(p.price) FROM bookings b JOIN properties p ON b.property_id = p.property_id WHERE b.status = 'Confirmed'")->fetchColumn() ?: 0;
-$pending_book = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'")->fetchColumn();
-
-// Recent Bookings
-$recent_bookings = $pdo->query("SELECT b.*, u.full_name, p.title FROM bookings b 
-                                JOIN users u ON b.client_id = u.user_id 
-                                JOIN properties p ON b.property_id = p.property_id 
-                                ORDER BY b.booking_id DESC LIMIT 5")->fetchAll();
+// 1. Chota Takwimu Moja kwa Moja kutoka Database
+$total_mali = $pdo->query("SELECT COUNT(*) FROM properties")->fetchColumn();
+$maombi_mapya = $pdo->query("SELECT COUNT(*) FROM bookings WHERE status = 'Pending'")->fetchColumn();
+$pesa_iliyopatikana = $pdo->query("SELECT SUM(amount) FROM bookings WHERE status = 'Approved'")->fetchColumn();
+$ujumbe_mpya = 5; // Hii unaweza kuilink na table ya messages baadae
 ?>
 <!DOCTYPE html>
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Premium Admin | Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Dashboard | Smart Estate Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --sidebar-bg: #0f172a;
-            --accent-blue: #38bdf8;
-            --main-bg: #f1f5f9;
-            --glass: rgba(255, 255, 255, 0.9);
-            --grad: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        :root { --accent: #38bdf8; --sidebar-bg: #0f172a; --glass: rgba(255, 255, 255, 0.8); }
+        body { 
+            background: url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1920&q=80') no-repeat center center fixed;
+            background-size: cover; font-family: 'Inter', sans-serif;
         }
-
-        body {
-            margin: 0;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: var(--main-bg);
-            display: flex;
-            color: #1e293b;
-            overflow-x: hidden;
-        }
-
-        /* --- SIDEBAR YA KISASA --- */
-        .sidebar {
-            width: 280px;
-            background: var(--grad);
-            height: 100vh;
-            position: fixed;
-            padding: 30px 20px;
-            box-sizing: border-box;
-            color: white;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-
-        .sidebar h2 {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--accent-blue);
-            margin-bottom: 40px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-shadow: 0 4px 10px rgba(56, 189, 248, 0.3);
-        }
-
-        .nav-menu { list-style: none; padding: 0; margin: 0; }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(241, 245, 249, 0.9); z-index: -1; }
         
-        .nav-item { margin-bottom: 5px; }
-
-        .nav-link {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 14px 20px;
-            color: #94a3b8;
-            text-decoration: none;
-            border-radius: 16px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .nav-link i { font-size: 1.2rem; }
-
-        .nav-link:hover, .nav-link.active {
-            background: rgba(255, 255, 255, 0.1);
-            color: var(--accent-blue);
-            transform: translateX(8px);
-        }
-
-        .nav-link.active {
-            background: var(--accent-blue);
-            color: var(--sidebar-bg);
-            box-shadow: 0 10px 20px rgba(56, 189, 248, 0.2);
-        }
-
-        /* --- MAIN CONTENT --- */
-        .main-content {
-            margin-left: 280px;
-            padding: 40px;
-            width: calc(100% - 280px);
-            min-height: 100vh;
-        }
-
-        .top-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 40px;
-        }
-
-        .welcome-text h1 { font-weight: 800; font-size: 2.2rem; margin: 0; letter-spacing: -1px; }
-        .welcome-text p { color: #64748b; margin: 5px 0 0; font-weight: 500; }
-
-        /* --- GLASS CARDS --- */
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .stat-card {
-            background: var(--white);
-            padding: 30px;
-            border-radius: 30px;
-            position: relative;
-            overflow: hidden;
-            background: white;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.03);
-            border: 1px solid rgba(255,255,255,0.8);
-            transition: 0.3s;
-        }
-
-        .stat-card:hover { transform: translateY(-10px); }
-
-        .stat-card .icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.4rem;
-            margin-bottom: 20px;
-        }
-
-        .stat-card h3 { font-size: 2rem; font-weight: 800; margin: 0; color: var(--sidebar-bg); }
-        .stat-card p { font-size: 0.85rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-top: 5px; }
-
-        /* --- TABLE AREA --- */
-        .data-section {
-            background: white;
-            padding: 35px;
-            border-radius: 35px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.02);
-        }
-
-        .data-section h2 { font-weight: 800; margin-bottom: 25px; display: flex; align-items: center; gap: 10px; }
-
-        table { width: 100%; border-collapse: collapse; }
-        th { text-align: left; padding: 20px; color: #94a3b8; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        td { padding: 20px; border-top: 1px solid #f1f5f9; font-weight: 600; }
+        /* Sidebar Design */
+        .sidebar { width: 280px; height: 100vh; background: var(--sidebar-bg); position: fixed; color: white; padding: 25px 15px; box-shadow: 10px 0 40px rgba(0,0,0,0.2); }
+        .sidebar-brand { font-size: 1.6rem; font-weight: 800; color: var(--accent); margin-bottom: 35px; text-align: center; letter-spacing: 1px; }
+        .nav-link { color: #94a3b8; padding: 12px 20px; border-radius: 15px; margin-bottom: 5px; display: flex; align-items: center; transition: 0.4s; text-decoration: none; }
+        .nav-link i { width: 30px; font-size: 1.1rem; }
+        .nav-link:hover, .nav-link.active { background: rgba(56, 189, 248, 0.15); color: var(--accent); font-weight: 600; }
         
-        .user-tag { display: flex; align-items: center; gap: 10px; }
-        .avatar { width: 35px; height: 35px; border-radius: 50%; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: var(--sidebar-bg); }
-
-        .status { padding: 6px 14px; border-radius: 12px; font-size: 0.75rem; font-weight: 800; }
-        .Pending { background: #fff7ed; color: #c2410c; }
+        /* Main Content */
+        .main-content { margin-left: 280px; padding: 40px; }
+        .glass-card { background: var(--glass); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 30px; padding: 30px; box-shadow: 0 15px 35px rgba(0,0,0,0.05); }
+        
+        /* Stat Widgets */
+        .stat-widget { background: white; border-radius: 25px; padding: 25px; display: flex; align-items: center; justify-content: space-between; transition: 0.3s; border: 1px solid #edf2f7; }
+        .stat-widget:hover { transform: translateY(-10px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+        .icon-circle { width: 60px; height: 60px; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; }
     </style>
 </head>
 <body>
+<div class="overlay"></div>
 
-    <div class="sidebar">
-        <h2><i class="fas fa-crown"></i> ELITE</h2>
-        <div class="nav-menu">
-            <div class="nav-item"><a href="dashboard.php" class="nav-link active"><i class="fas fa-chart-pie"></i> Dashboard</a></div>
-            <div class="nav-item"><a href="admin_add_property.php" class="nav-link"><i class="fas fa-plus-square"></i> Ongeza Mali</a></div>
-            <div class="nav-item"><a href="admin_manage_properties.php" class="nav-link"><i class="fas fa-building"></i> Dhibiti Mali</a></div>
-            <div class="nav-item"><a href="admin_approve_bookings.php" class="nav-link"><i class="fas fa-check-double"></i> Bookings</a></div>
-            <div class="nav-item"><a href="tenants_list.php" class="nav-link"><i class="fas fa-users-gear"></i> Wapangaji</a></div>
-            <div class="nav-item"><a href="manage_maintenance.php" class="nav-link"><i class="fas fa-screwdriver-wrench"></i> Matengenezo</a></div>
-            <div class="nav-item"><a href="reports.php" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Mapato</a></div>
-            <div class="nav-item"><a href="settings.php" class="nav-link"><i class="fas fa-sliders"></i> Mipangilio</a></div>
-            <div style="height: 100px;"></div>
-            <div class="nav-item"><a href="logout.php" class="nav-link" style="color: #fb7185;"><i class="fas fa-power-off"></i> Logout</a></div>
+<div class="sidebar">
+    <div class="sidebar-brand">SMART ESTATE</div>
+    <nav class="nav flex-column">
+        <a class="nav-link active" href="dashboard.php"><i class="fas fa-grid-2"></i> Dashboard</a>
+        <a class="nav-link" href="admin_add_property.php"><i class="fas fa-plus-circle"></i> Ongeza Mali</a>
+        <a class="nav-link" href="admin_manage_properties.php"><i class="fas fa-home"></i> Simamia Mali</a>
+        <a href="admin_approve_properties.php" class="nav-link">
+    <i class="fas fa-check-double me-2"></i> Uhakiki wa Mali
+    <?php 
+        // Hii kodi itahesabu mali ngapi mpya zimetumwa na wateja
+        $stmt = $pdo->query("SELECT COUNT(*) FROM properties WHERE status = 'Pending'");
+        $p_count = $stmt->fetchColumn();
+        if($p_count > 0) echo "<span class='badge bg-danger ms-auto'>$p_count</span>";
+    ?>
+</a>
+
+<a href="admin_approve_bookings.php" class="nav-link">
+    <i class="fas fa-calendar-check me-2"></i> Maombi ya Wateja
+</a>
+        <a class="nav-link" href="admin_payments.php"><i class="fas fa-wallet"></i> Ripoti ya Fedha</a>
+        <a class="nav-link" href="admin_maintenance.php"><i class="fas fa-tools"></i> Matengenezo</a>
+        <a class="nav-link" href="admin_messages.php"><i class="fas fa-comment-alt-lines"></i> Ujumbe</a>
+        <a class="nav-link" href="admin_settings.php"><i class="fas fa-sliders-h"></i> Mipangilio</a>
+        <a class="nav-link text-danger mt-5" href="logout.php"><i class="fas fa-power-off"></i> Toka Nje</a>
+    </nav>
+</div>
+
+<div class="main-content">
+    <header class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Karibu, Bosi! 👋</h2>
+            <p class="text-muted">Hali ya biashara yako leo Feb 9, 2026.</p>
+        </div>
+        <div class="d-flex gap-3 align-items-center bg-white p-2 rounded-pill shadow-sm pe-4">
+            <img src="https://ui-avatars.com/api/?name=Admin&background=0f172a&color=fff" class="rounded-circle" width="45">
+            <span class="fw-bold">Admin Panel</span>
+        </div>
+    </header>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-3">
+            <div class="stat-widget">
+                <div><small class="text-muted d-block mb-1">Jumla ya Mali</small><h3 class="fw-bold mb-0"><?php echo $total_mali; ?></h3></div>
+                <div class="icon-circle bg-primary text-white bg-opacity-10" style="color: #0d6efd !important;"><i class="fas fa-home"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-widget">
+                <div><small class="text-muted d-block mb-1">Maombi Mapya</small><h3 class="fw-bold mb-0 text-warning"><?php echo $maombi_mapya; ?></h3></div>
+                <div class="icon-circle bg-warning text-white bg-opacity-10" style="color: #ffc107 !important;"><i class="fas fa-clock"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-widget">
+                <div><small class="text-muted d-block mb-1">Mapato Leo</small><h3 class="fw-bold mb-0 text-success">TZS <?php echo number_format($pesa_iliyopatikana); ?></h3></div>
+                <div class="icon-circle bg-success text-white bg-opacity-10" style="color: #198754 !important;"><i class="fas fa-hand-holding-usd"></i></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-widget">
+                <div><small class="text-muted d-block mb-1">Inbox</small><h3 class="fw-bold mb-0"><?php echo $ujumbe_mpya; ?></h3></div>
+                <div class="icon-circle bg-info text-white bg-opacity-10" style="color: #0dcaf0 !important;"><i class="fas fa-envelope-open-text"></i></div>
+            </div>
         </div>
     </div>
 
-    <div class="main-content">
-        <div class="top-bar">
-            <div class="welcome-text">
-                <h1>Habari, Bosi! 👋</h1>
-                <p>Hii ndiyo hali ya milki zako leo.</p>
-            </div>
-            <div class="date-chip" style="background: white; padding: 12px 20px; border-radius: 15px; font-weight: 800; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
-                <i class="far fa-calendar-alt text-primary"></i> <?php echo date('d M, Y'); ?>
-            </div>
+    <div class="glass-card">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold mb-0">Mali Zilizowekwa Hivi Karibuni</h5>
+            <a href="admin_manage_properties.php" class="btn btn-sm btn-outline-primary rounded-pill px-3">Ona Zote</a>
         </div>
-
-        <div class="stats-container">
-            <div class="stat-card">
-                <div class="icon" style="background: #e0f2fe; color: #0ea5e9;"><i class="fas fa-home"></i></div>
-                <h3><?php echo $total_mali; ?></h3>
-                <p>Mali Sokoni</p>
-            </div>
-            <div class="stat-card">
-                <div class="icon" style="background: #fef3c7; color: #d97706;"><i class="fas fa-wrench"></i></div>
-                <h3><?php echo $pending_maint; ?></h3>
-                <p>Kero Mpya</p>
-            </div>
-            <div class="stat-card">
-                <div class="icon" style="background: #dcfce7; color: #15803d;"><i class="fas fa-coins"></i></div>
-                <h3><?php echo number_format($revenue / 1000); ?>K</h3>
-                <p>Pesa (Confirmed)</p>
-            </div>
-            <div class="stat-card">
-                <div class="icon" style="background: #fee2e2; color: #b91c1c;"><i class="fas fa-bell"></i></div>
-                <h3><?php echo $pending_book; ?></h3>
-                <p>Wateja Wapya</p>
-            </div>
-        </div>
-
-        <div class="data-section">
-            <h2><i class="fas fa-bolt" style="color: #f59e0b;"></i> Bookings za Papo Hapo</h2>
-            <table>
+        <div class="table-responsive">
+            <table class="table align-middle">
                 <thead>
-                    <tr>
-                        <th>Mteja</th>
-                        <th>Nyumba / Mali</th>
-                        <th>Kiasi</th>
-                        <th>Hali</th>
+                    <tr class="text-muted small">
+                        <th>MALI</th>
+                        <th>BEI</th>
+                        <th>MAHALI</th>
+                        <th>HALI</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <?php foreach($recent_bookings as $rb): ?>
+                    <?php 
+                    $recent = $pdo->query("SELECT * FROM properties ORDER BY property_id DESC LIMIT 4");
+                    while($row = $recent->fetch()): ?>
                     <tr>
                         <td>
-                            <div class="user-tag">
-                                <div class="avatar"><i class="fas fa-user"></i></div>
-                                <span><?php echo $rb['full_name']; ?></span>
+                            <div class="d-flex align-items-center">
+                                <img src="uploads/<?php echo $row['image_name']; ?>" class="rounded-3 me-3 shadow-sm" width="55" height="45" style="object-fit:cover;">
+                                <span class="fw-bold text-dark"><?php echo $row['title']; ?></span>
                             </div>
                         </td>
-                        <td><?php echo $rb['title']; ?></td>
-                        <td><span style="font-weight: 800;">TZS <?php echo number_format($rb['price']); ?></span></td>
-                        <td><span class="status <?php echo $rb['status']; ?>"><?php echo $rb['status']; ?></span></td>
+                        <td class="fw-bold">TZS <?php echo number_format($row['price']); ?></td>
+                        <td><i class="fas fa-map-marker-alt text-danger me-1 small"></i> <?php echo $row['location']; ?></td>
+                        <td><span class="badge rounded-pill <?php echo ($row['status']=='Available') ? 'bg-success bg-opacity-10 text-success' : 'bg-danger bg-opacity-10 text-danger'; ?> px-3"><?php echo $row['status']; ?></span></td>
                     </tr>
-                    <?php endforeach; ?>
+                    <?php endwhile; ?>
                 </tbody>
             </table>
         </div>
     </div>
-
+</div>
 </body>
 </html>
