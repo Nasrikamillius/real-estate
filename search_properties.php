@@ -20,7 +20,6 @@ session_start();
             overflow-x: hidden;
         }
 
-        /* Hero Background ya Hatari */
         .hero-banner {
             background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), 
                         url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') no-repeat center center;
@@ -36,7 +35,6 @@ session_start();
             border-bottom-right-radius: 50px;
         }
 
-        /* Glassmorphism Navbar */
         .glass-nav {
             background: rgba(255, 255, 255, 0.8) !important;
             backdrop-filter: blur(15px);
@@ -44,7 +42,6 @@ session_start();
             padding: 15px 0;
         }
 
-        /* Mbwembwe za Search Box */
         .search-wrapper {
             background: white;
             padding: 10px;
@@ -56,20 +53,14 @@ session_start();
             display: flex;
             transition: 0.4s;
             border: 5px solid rgba(255, 255, 255, 0.5);
+            z-index: 10;
+            position: relative;
         }
         
         .search-wrapper:focus-within { transform: scale(1.05); }
+        .search-wrapper input { border: none; padding: 15px 30px; width: 100%; border-radius: 100px; outline: none; font-size: 1.1rem; }
+        .btn-search { background: linear-gradient(45deg, #ff385c, #bd1e59); color: white; border: none; padding: 0 40px; border-radius: 100px; font-weight: 700; }
 
-        .search-wrapper input { 
-            border: none; padding: 15px 30px; width: 100%; border-radius: 100px; outline: none; font-size: 1.1rem;
-        }
-
-        .btn-search { 
-            background: linear-gradient(45deg, #ff385c, #bd1e59); /* Airbnb Color */
-            color: white; border: none; padding: 0 40px; border-radius: 100px; font-weight: 700;
-        }
-
-        /* Property Cards za Mbwembwe */
         .house-card {
             background: white;
             border-radius: 30px;
@@ -100,15 +91,19 @@ session_start();
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
 
-        .btn-book {
+        .btn-view {
             background: #0f172a; color: white; border-radius: 15px; padding: 12px;
             font-weight: 700; width: 100%; text-decoration: none; display: block;
-            text-align: center; transition: 0.3s;
+            text-align: center; transition: 0.3s; margin-bottom: 10px;
         }
         
-        .btn-book:hover { background: #ff385c; color: white; letter-spacing: 1px; }
+        .btn-view:hover { background: #ff385c; color: white; }
 
-        .location-text { color: #64748b; font-size: 0.9rem; }
+        .btn-whatsapp {
+            background: #25d366; color: white; border-radius: 15px; padding: 10px;
+            font-weight: 700; width: 100%; text-decoration: none; display: block;
+            text-align: center; font-size: 0.9rem;
+        }
     </style>
 </head>
 <body>
@@ -152,13 +147,19 @@ session_start();
                 <div class="card-body p-4 text-start">
                     <h5 class="fw-bold mb-1 text-dark"><?php echo $row['title']; ?></h5>
                     <p class="location-text mb-3"><i class="fas fa-map-marker-alt text-danger me-1"></i> <?php echo $row['location']; ?></p>
-                    <div class="d-flex mb-3 gap-3 text-muted small">
-                        <span><i class="fas fa-bed"></i> 3 Beds</span>
-                        <span><i class="fas fa-bath"></i> 2 Baths</span>
-                        <span><i class="fas fa-expand"></i> 120sqm</span>
+                    
+                    <div class="d-flex mb-3 gap-3 text-muted small border-bottom pb-3">
+                        <span><i class="fas fa-bed me-1"></i> 3 Beds</span>
+                        <span><i class="fas fa-bath me-1"></i> 2 Baths</span>
+                        <span><i class="fas fa-calendar-alt me-1"></i> Available</span>
                     </div>
-                    <a href="checkout.php?id=<?php echo $row['property_id']; ?>" class="btn-book">
-                        Reserve Now
+
+                    <a href="view_property.php?id=<?php echo $row['property_id']; ?>" class="btn-view">
+                        <i class="fas fa-eye me-2"></i> View & Book
+                    </a>
+
+                    <a href="https://wa.me/255700000000?text=Habari, nahitaji mali hii: <?php echo $row['title']; ?>" class="btn-whatsapp">
+                        <i class="fab fa-whatsapp me-2"></i> Ulizia WhatsApp
                     </a>
                 </div>
             </div>

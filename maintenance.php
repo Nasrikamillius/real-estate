@@ -1,87 +1,136 @@
 <?php
+include 'db_connect.php';
 session_start();
-require 'db_connect.php';
 
-// 1. Update Hali ya Matengenezo (Mfano: Toka Pending kwenda Fixed)
-if (isset($_GET['complete_id'])) {
-    $stmt = $pdo->prepare("UPDATE maintenance_requests SET status = 'Fixed' WHERE request_id = ?");
-    $stmt->execute([$_GET['complete_id']]);
-    header("Location: maintenance.php?msg=Imeratibiwa kikamilifu");
+// Hakikisha user_id inatoka kwenye session ya mteja aliye-login
+$user_id = $_SESSION['user_id'] ?? 1; 
+
+if (isset($_POST['send_request'])) {
+    $issue_type = $_POST['issue_type'];
+    $description = $_POST['description'];
+    $status = 'Pending';
+
+    // Query ya kuingiza ombi kwenye database
+    $sql = "INSERT INTO maintenance (user_id, issue_type, description, status) 
+            VALUES (?, ?, ?, ?)";
+    $stmt = $pdo->prepare($sql);
+    
+    if ($stmt->execute([$user_id, $issue_type, $description, $status])) {
+        $success = "Ombi lako la matengenezo limetumwa kikamilifu!";
+    } else {
+        $error = "Samahani, imeshindikana kutuma ombi lako.";
+    }
 }
-
-// 2. Vuta taarifa za matengenezo zilizounganishwa na wateja na mali zao
-$requests = $pdo->query("SELECT m.*, u.full_name, u.phone, p.title 
-                         FROM maintenance_requests m 
-                         JOIN users u ON m.user_id = u.user_id 
-                         JOIN properties p ON m.property_id = p.property_id 
-                         ORDER BY m.request_id DESC")->fetchAll();
 ?>
+
 <!DOCTYPE html>
 <html lang="sw">
 <head>
     <meta charset="UTF-8">
-    <title>Matengenezo | Elite Admin</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ripoti Tatizo | Smart Estate</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --sb-width: 260px; --primary: #0f172a; --accent: #38bdf8; --warning: #f59e0b; }
-        body { margin: 0; background: #f4f7fe; font-family: 'Plus Jakarta Sans', sans-serif; display: flex; }
-        
-        .sidebar { width: var(--sb-width); background: var(--primary); height: 100vh; position: fixed; color: white; padding: 30px 20px; box-sizing: border-box; }
-        .sidebar h2 { color: var(--accent); font-weight: 800; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
-        .nav-link { display: flex; align-items: center; gap: 15px; padding: 15px; color: #94a3b8; text-decoration: none; border-radius: 12px; margin-bottom: 8px; font-weight: 600; transition: 0.3s; }
-        .nav-link:hover, .nav-link.active { background: rgba(56, 189, 248, 0.1); color: var(--accent); }
+        body { 
+            background: #ffffff; /* Pure white background */
+            background-image: radial-gradient(#dee2e6 0.5px, transparent 0.5px);
+            background-size: 20px 20px; /* Subtle dot pattern for texture */
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+        }
 
-        .main-content { margin-left: var(--sb-width); width: calc(100% - var(--sb-width)); padding: 40px; box-sizing: border-box; }
-        
-        .issue-card { background: white; padding: 25px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.02); margin-bottom: 20px; border-left: 6px solid var(--warning); display: flex; justify-content: space-between; align-items: center; }
-        .issue-card.Fixed { border-left-color: #10b981; opacity: 0.8; }
-        
-        .info h3 { margin: 0 0 5px 0; font-size: 1.1rem; color: var(--primary); }
-        .info p { margin: 0; color: #64748b; font-size: 0.9rem; }
-        .status-pill { padding: 5px 12px; border-radius: 8px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; }
-        .pill-pending { background: #fffbeb; color: #d97706; }
-        .pill-fixed { background: #dcfce7; color: #16a34a; }
-        
-        .btn-done { background: var(--primary); color: white; padding: 10px 20px; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 0.85rem; }
+        /* GLASSMORPHISM ON WHITE */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.4); 
+            backdrop-filter: blur(15px) saturate(180%);
+            -webkit-backdrop-filter: blur(15px) saturate(180%);
+            border: 1px solid rgba(209, 213, 219, 0.3);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+
+        .form-select, .form-control {
+            border-radius: 12px;
+            padding: 12px;
+            border: 1px solid #e0e0e0;
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            border: none;
+            padding: 13px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: 0.3s;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
+        }
+
+        .back-btn {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h2><i class="fas fa-city"></i> ELITE</h2>
-        <a href="dashboard.php" class="nav-link"><i class="fas fa-th-large"></i> Dashboard</a>
-        <a href="admin_add_property.php" class="nav-link"><i class="fas fa-plus-circle"></i> Ongeza Mali</a>
-        <a href="approve_items.php" class="nav-link"><i class="fas fa-check-circle"></i> Idhinisha</a>
-        <a href="maintenance.php" class="nav-link active"><i class="fas fa-tools"></i> Matengenezo</a>
-        <a href="reports.php" class="nav-link"><i class="fas fa-file-invoice-dollar"></i> Miamala</a>
-        <a href="logout.php" class="nav-link" style="margin-top:50px; color:#f87171;"><i class="fas fa-power-off"></i> Logout</a>
-    </div>
 
-    <div class="main-content">
-        <h1 style="font-weight: 800; margin-bottom: 30px;">Maombi ya Matengenezo</h1>
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-5">
+            <a href="tenant_dashboard.php" class="back-btn">
+                <i class="fas fa-arrow-left me-1"></i> Rudi Tenant Dashboard
+            </a>
 
-        <?php foreach($requests as $req): ?>
-        <div class="issue-card <?php echo $req['status']; ?>">
-            <div class="info">
-                <div style="margin-bottom: 10px;">
-                    <span class="status-pill <?php echo ($req['status'] == 'Pending') ? 'pill-pending' : 'pill-fixed'; ?>">
-                        <?php echo $req['status']; ?>
-                    </span>
+            <div class="glass-card">
+                <div class="text-center mb-4">
+                    <h3 class="fw-bold text-dark">Maintenance Request</h3>
+                    <p class="text-muted small">Tuma maelezo ya marekebisho unayohitaji</p>
                 </div>
-                <h3><?php echo $req['issue_description']; ?></h3>
-                <p><i class="fas fa-home"></i> <strong>Nyumba:</strong> <?php echo $req['title']; ?></p>
-                <p><i class="fas fa-user"></i> <strong>Mpangaji:</strong> <?php echo $req['full_name']; ?> (<?php echo $req['phone']; ?>)</p>
-            </div>
-            
-            <?php if($req['status'] == 'Pending'): ?>
-                <a href="?complete_id=<?php echo $req['request_id']; ?>" class="btn-done">WEKA "FIXED"</a>
-            <?php else: ?>
-                <span style="color: #10b981; font-weight: 800;"><i class="fas fa-check-double"></i> IMEKAMILIKA</span>
-            <?php endif; ?>
-        </div>
-        <?php endforeach; ?>
 
-        <?php if(empty($requests)) echo "<p style='text-align:center; color:#94a3b8;'>Hakuna ripoti za matengenezo kwa sasa.</p>"; ?>
+                <?php if(isset($success)): ?>
+                    <div class="alert alert-success border-0 rounded-3 small"><?php echo $success; ?></div>
+                <?php endif; ?>
+
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Aina ya Tatizo</label>
+                        <select name="issue_type" class="form-select" required>
+                            <option value="">-- Chagua Moja --</option>
+                            <option value="Electrical">Umeme (Lights/Sockets)</option>
+                            <option value="Plumbing">Maji (Pipes/Leaking)</option>
+                            <option value="Carpentry">Mbao (Doors/Furniture)</option>
+                            <option value="AC & Cooling">AC/Feni</option>
+                            <option value="Painting">Rangi & Kuta</option>
+                            <option value="Security">Security/Fensi</option>
+                            <option value="Other">Mengineyo</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-secondary">Maelezo Kamili</label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Elezea hapa tatizo liko wapi..." required></textarea>
+                    </div>
+
+                    <button type="submit" name="send_request" class="btn btn-primary w-100">
+                        <i class="fas fa-tools me-2"></i> Tuma Ombi Sasa
+                    </button>
+                </form>
+            </div>
+        </div>
     </div>
+</div>
+
 </body>
 </html>
