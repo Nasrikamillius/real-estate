@@ -7,140 +7,166 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soko la Mali | Smart Estate</title>
+    <title>Search Luxury | Smart Estate</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
     <style>
-        :root { --main-blue: #38bdf8; --dark-navy: #0f172a; --soft-bg: #f8fafc; }
-        body { background: var(--soft-bg); font-family: 'Poppins', sans-serif; margin: 0; }
-
-        /* Sidebar ya Kijanja */
-        .sidebar { width: 280px; height: 100vh; background: var(--dark-navy); position: fixed; color: white; padding: 25px 0; z-index: 1000; }
-        .sidebar-brand { padding: 0 30px 40px; color: var(--main-blue); font-weight: 800; font-size: 1.6rem; letter-spacing: 1px; }
-        .sidebar a { color: #94a3b8; padding: 14px 30px; display: block; text-decoration: none; transition: 0.4s; font-weight: 500; margin-bottom: 5px; }
-        .sidebar a:hover, .sidebar a.active { background: rgba(56, 189, 248, 0.1); color: var(--main-blue); border-right: 4px solid var(--main-blue); }
-
-        .main-content { margin-left: 280px; padding: 40px; }
-
-        /* Search Bar ya Kimataifa (Glassmorphism Effect) */
-        .search-wrapper { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 25px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.04); 
-            margin-bottom: 45px;
-            border: 1px solid rgba(226, 232, 240, 0.8);
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        
+        body { 
+            background-color: #f0f4f8; 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow-x: hidden;
         }
-        .search-input { border: none; background: #f1f5f9; padding: 15px 25px; border-radius: 15px; width: 100%; font-size: 0.95rem; }
-        .search-input:focus { outline: 2px solid var(--main-blue); background: white; }
 
-        /* Smart Property Cards */
-        .smart-card { 
-            background: white; 
-            border-radius: 30px; 
-            overflow: hidden; 
-            border: none; 
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
-            height: 100%;
+        /* Hero Background ya Hatari */
+        .hero-banner {
+            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.6)), 
+                        url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') no-repeat center center;
+            background-size: cover;
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            color: white;
             position: relative;
+            border-bottom-left-radius: 50px;
+            border-bottom-right-radius: 50px;
         }
-        .smart-card:hover { transform: translateY(-15px); box-shadow: 0 30px 60px rgba(15, 23, 42, 0.15); }
-        
-        .img-wrapper { position: relative; height: 260px; overflow: hidden; }
-        .img-wrapper img { width: 100%; height: 100%; object-fit: cover; transition: 0.8s; }
-        .smart-card:hover .img-wrapper img { transform: scale(1.15); }
 
-        .status-badge { position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(5px); color: white; padding: 6px 18px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; z-index: 10; }
-        .price-overlay { position: absolute; bottom: 20px; left: 20px; background: var(--main-blue); color: var(--dark-navy); padding: 8px 20px; border-radius: 15px; font-weight: 800; font-size: 1.1rem; box-shadow: 0 10px 20px rgba(56, 189, 248, 0.3); }
-
-        .card-body { padding: 30px; }
-        .prop-title { font-size: 1.25rem; font-weight: 700; color: var(--dark-navy); margin-bottom: 8px; }
-        .prop-loc { color: #64748b; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-        
-        .btn-discover { 
-            background: var(--dark-navy); 
-            color: white; 
-            width: 100%; 
-            padding: 14px; 
-            border-radius: 18px; 
-            font-weight: 700; 
-            text-decoration: none; 
-            display: block; 
-            text-align: center; 
-            margin-top: 20px;
-            transition: 0.3s;
+        /* Glassmorphism Navbar */
+        .glass-nav {
+            background: rgba(255, 255, 255, 0.8) !important;
+            backdrop-filter: blur(15px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 15px 0;
         }
-        .btn-discover:hover { background: var(--main-blue); color: var(--dark-navy); transform: scale(1.02); }
+
+        /* Mbwembwe za Search Box */
+        .search-wrapper {
+            background: white;
+            padding: 10px;
+            border-radius: 100px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.15);
+            max-width: 800px;
+            width: 90%;
+            margin-top: -50px;
+            display: flex;
+            transition: 0.4s;
+            border: 5px solid rgba(255, 255, 255, 0.5);
+        }
+        
+        .search-wrapper:focus-within { transform: scale(1.05); }
+
+        .search-wrapper input { 
+            border: none; padding: 15px 30px; width: 100%; border-radius: 100px; outline: none; font-size: 1.1rem;
+        }
+
+        .btn-search { 
+            background: linear-gradient(45deg, #ff385c, #bd1e59); /* Airbnb Color */
+            color: white; border: none; padding: 0 40px; border-radius: 100px; font-weight: 700;
+        }
+
+        /* Property Cards za Mbwembwe */
+        .house-card {
+            background: white;
+            border-radius: 30px;
+            border: none;
+            transition: 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            overflow: hidden;
+            height: 100%;
+        }
+
+        .house-card:hover { 
+            transform: scale(1.03) translateY(-10px);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15);
+        }
+
+        .img-zoom-container { overflow: hidden; height: 260px; position: relative; }
+        .house-card img { transition: 0.8s; width: 100%; height: 100%; object-fit: cover; }
+        .house-card:hover img { transform: scale(1.1); }
+
+        .price-badge {
+            position: absolute;
+            top: 20px; right: 20px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(5px);
+            padding: 8px 18px;
+            border-radius: 15px;
+            font-weight: 800;
+            color: #ff385c;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .btn-book {
+            background: #0f172a; color: white; border-radius: 15px; padding: 12px;
+            font-weight: 700; width: 100%; text-decoration: none; display: block;
+            text-align: center; transition: 0.3s;
+        }
+        
+        .btn-book:hover { background: #ff385c; color: white; letter-spacing: 1px; }
+
+        .location-text { color: #64748b; font-size: 0.9rem; }
     </style>
 </head>
 <body>
 
-<div class="sidebar">
-    <div class="sidebar-brand">SMART ESTATE</div>
-    <a href="search_property.php" class="active"><i class="fas fa-th-large me-2"></i> Gundua Mali</a>
-    <a href="my_bookings.php"><i class="fas fa-heart me-2"></i> Bookings Zangu</a>
-    <a href="client_maintenance.php"><i class="fas fa-tools me-2"></i> Matengenezo</a>
-    <a href="logout.php" class="text-danger mt-5"><i class="fas fa-power-off me-2"></i> Ondoka</a>
+<nav class="navbar glass-nav sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-800" href="#"><span style="color: #ff385c;">AIR</span>ESTATE</a>
+        <div class="ms-auto">
+            <a href="tenant_dashboard.php" class="btn btn-dark rounded-pill px-4 shadow-sm animate__animated animate__fadeInRight">
+                <i class="fas fa-th-large me-2"></i> Dashboard Yangu
+            </a>
+        </div>
+    </div>
+</nav>
+
+<div class="hero-banner animate__animated animate__fadeIn">
+    <h1 class="display-3 fw-800 animate__animated animate__zoomIn">Find Your Dream Stay</h1>
+    <p class="lead opacity-75 animate__animated animate__fadeInUp animate__delay-1s">Nyumba za kifahari mkononi mwako.</p>
 </div>
 
-<div class="main-content">
-    <div class="search-wrapper">
-        <form action="" method="GET" class="row g-3">
-            <div class="col-md-9">
-                <input type="text" name="q" class="search-input" placeholder="Tafuta mahali, aina ya nyumba, au mtaa..." value="<?php echo $_GET['q'] ?? ''; ?>">
-            </div>
-            <div class="col-md-3">
-                <button type="submit" class="btn-discover m-0" style="padding: 12px;"><i class="fas fa-search me-2"></i> TAFUTA</button>
-            </div>
-        </form>
-    </div>
+<div class="container d-flex justify-content-center">
+    <form action="" method="GET" class="search-wrapper animate__animated animate__slideInUp">
+        <input type="text" name="query" placeholder="Unataka kwenda wapi? (Mfano: Masaki, Kinondoni...)">
+        <button type="submit" class="btn-search">Search</button>
+    </form>
+</div>
 
-    <h2 class="fw-bold text-dark mb-4">Mali Mpya Sokoni</h2>
-
+<div class="container py-5 mt-4">
     <div class="row g-4">
-        <?php
-        // LINK NA ADMIN: Chota data zote alizoweka Admin
-        $q = isset($_GET['q']) ? $_GET['q'] : '';
-        $sql = "SELECT * FROM properties WHERE status = 'Available' AND (title LIKE ? OR location LIKE ?) ORDER BY property_id DESC";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute(["%$q%", "%$q%"]);
-        $results = $stmt->fetchAll();
-
-        if(count($results) > 0) {
-            foreach($results as $row):
-        ?>
-        <div class="col-lg-4 col-md-6">
-            <div class="smart-card">
-                <div class="img-wrapper">
-                    <div class="status-badge"><?php echo strtoupper($row['property_type']); ?></div>
-                    <img src="uploads/<?php echo $row['image_name']; ?>" alt="Property Image">
-                    <div class="price-overlay">TZS <?php echo number_format($row['price']); ?></div>
+        <?php 
+        $sql = "SELECT * FROM properties WHERE status = 'Available'";
+        $stmt = $pdo->query($sql);
+        
+        while($row = $stmt->fetch()): ?>
+        <div class="col-lg-4 col-md-6 animate__animated animate__fadeInUp">
+            <div class="card house-card shadow-sm">
+                <div class="img-zoom-container">
+                    <img src="uploads/<?php echo $row['image_name']; ?>" alt="Nyumba">
+                    <div class="price-badge">TZS <?php echo number_format($row['price']); ?></div>
                 </div>
-                <div class="card-body">
-                    <h5 class="prop-title"><?php echo $row['title']; ?></h5>
-                    <div class="prop-loc">
-                        <i class="fas fa-map-marker-alt text-danger"></i> <?php echo $row['location']; ?>
+                <div class="card-body p-4 text-start">
+                    <h5 class="fw-bold mb-1 text-dark"><?php echo $row['title']; ?></h5>
+                    <p class="location-text mb-3"><i class="fas fa-map-marker-alt text-danger me-1"></i> <?php echo $row['location']; ?></p>
+                    <div class="d-flex mb-3 gap-3 text-muted small">
+                        <span><i class="fas fa-bed"></i> 3 Beds</span>
+                        <span><i class="fas fa-bath"></i> 2 Baths</span>
+                        <span><i class="fas fa-expand"></i> 120sqm</span>
                     </div>
-                    <hr class="my-3 opacity-25">
-                    <div class="d-flex justify-content-between text-muted small mb-4">
-                        <span><i class="fas fa-bed me-1"></i> 3 Beds</span>
-                        <span><i class="fas fa-bath me-1"></i> 2 Baths</span>
-                        <span><i class="fas fa-vector-square me-1"></i> 1200 sqft</span>
-                    </div>
-                    <a href="view_property.php?id=<?php echo $row['property_id']; ?>" class="btn-discover">
-                        ANGALIA ZAIDI
+                    <a href="checkout.php?id=<?php echo $row['property_id']; ?>" class="btn-book">
+                        Reserve Now
                     </a>
                 </div>
             </div>
         </div>
-        <?php 
-            endforeach; 
-        } else {
-            echo "<div class='col-12 text-center py-5'><h4 class='text-muted'>Pole! Hakuna mali inayofanana na utafutaji wako.</h4></div>";
-        }
-        ?>
+        <?php endwhile; ?>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
